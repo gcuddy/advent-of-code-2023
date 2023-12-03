@@ -98,10 +98,18 @@ const gear_regex = /\*/g;
 
 type Row = number;
 
-async function part_2(path: string) {
+export function in_range(start: number, end: number, ...nums: number[]) {
+  for (let i = start; i <= end; i++) {
+    if (nums.includes(i)) return true;
+  }
+  return false;
+}
+
+export async function part_2(path: string) {
   const file = Bun.file(path);
   const text = await file.text();
   const rows = text.split("\n");
+  console.log({ rows });
   const rowLength = rows[0].length;
 
   //   this is probably not the best structure
@@ -119,10 +127,11 @@ async function part_2(path: string) {
     const digits = Array.from(rows[row].matchAll(digit_regex)).map((r) => {
       return {
         digit: +r[0],
-        range: [r.index ?? 0, r.index ?? 0 + r[0].length],
+        range: [r.index ?? 0, (r.index ?? 0) + r[0].length - 1],
       } as const;
     });
     digitMap.set(row, digits);
+    return digits;
   };
 
   const total = rows.reduce((acc, row, rowIndex) => {
@@ -134,10 +143,12 @@ async function part_2(path: string) {
     const sum = matches.reduce((acc, matchArr) => {
       const { index } = matchArr;
       if (index === undefined) return acc;
+      console.log(`Examining index ${matchArr.index} of row ${rowIndex}`);
       const indices = [
         Math.max(0, index - 1),
         Math.min(rowLength - 1, index + 1),
-      ];
+      ] as const;
+      console.log({ indices });
 
       let parts: number[] = [];
       let directionIndex = 0;
@@ -150,150 +161,78 @@ async function part_2(path: string) {
               break;
             }
             // look in row above
-            const previousRow = rows[rowIndex - 1];
-
-            // find digit
-            // TODO: new approach: store previous row's digits, and check if those digits fall within index matrix
-
-            // Was doing ...indices before, but indices goes up to (not including) end index. So have to add 1. Kind of awkward
-            const areaToCheck = previousRow.slice(indices[0], indices[1] + 1);
-            console.log({ areaToCheck });
-            const m = areaToCheck.match(digit_regex);
-            console.log({ m, index: m?.index });
-            if (m?.index !== undefined) {
-              //   then we've got to check around the digit, so help me god there is a better way to do this that has better memory usage
-              const actualIndex = indices[0] + m.index;
-              console.log({ actualIndex });
-
-              const prefix: string[] = [];
-              const postfix: string[] = [];
-
-              let prefixIndex = actualIndex;
-              while (
-                prefixIndex >= 0 &&
-                digit_regex.test(previousRow[prefixIndex])
-              ) {
-                // not performant
-                prefix.push(previousRow[prefixIndex]);
-
-                prefixIndex--;
-              }
-              prefix.reverse();
-
-              let postfixIndex = actualIndex;
-              while (
-                postfixIndex < rowLength &&
-                digit_regex.test(previousRow[postfixIndex])
-              ) {
-                // not performant
-                postfix.push(previousRow[postfixIndex]);
-
-                postfixIndex++;
-              }
-
-              const num = Number(prefix.join("") + m[0] + postfix.join(""));
-              console.log({ num });
-
-              parts.push(num);
-
-              break;
+            const previousRowDigits = getOrSetDigitsForRow(rowIndex - 1);
+            // console.log({ previousRowDigits });
+            for (const m of previousRowDigits) {
+              if (in_range(indices[0], indices[1], ...m.range))
+                parts.push(m.digit);
             }
+
+            break;
           }
           case "e": {
             // check right before
-            if (index === 0) {
+            if (index === row.length - 1) {
               break;
             }
 
-            let i = indices[0];
-
-            let nums: string[] = [];
-
-            while (digit_regex.test(row[i]) && i >= 0) {
-              nums.push(row[i]);
-              i--;
+            if (rowIndex === 1) {
+              //   console.log(indices, digits);
             }
 
-            if (!nums.length) break;
+            const d = digits.find((d) => d.range[0] === indices[1]);
 
-            nums.reverse();
-
-            const num = Number(nums.join(""));
-
-            parts.push(num);
+            if (d) {
+              parts.push(d.digit);
+            }
+            break;
           }
           case "s": {
             if (rowIndex === rows.length - 1) {
               break;
             }
-            const nextRow = rows[rowIndex + 1];
-            // look in row above
-            const areaToCheck = nextRow.slice(indices[0], indices[1] + 1);
-            const m = areaToCheck.match(digit_regex);
-            if (m?.index !== undefined) {
-              //   then we've got to check around the digit, so help me god there is a better way to do this that has better memory usage
-              const actualIndex = indices[0] + m.index;
 
-              const prefix: string[] = [];
-              const postfix: string[] = [];
+            const nextRowDigits = getOrSetDigitsForRow(rowIndex + 1);
 
-              let prefixIndex = actualIndex;
-              while (
-                prefixIndex >= 0 &&
-                digit_regex.test(nextRow[prefixIndex])
-              ) {
-                // not performant
-                prefix.push(nextRow[prefixIndex]);
-
-                prefixIndex--;
-              }
-              prefix.reverse();
-
-              let postfixIndex = actualIndex;
-              while (
-                postfixIndex < rowLength &&
-                digit_regex.test(nextRow[postfixIndex])
-              ) {
-                // not performant
-                postfix.push(nextRow[postfixIndex]);
-
-                postfixIndex++;
-              }
-
-              const num = Number(prefix.join("") + m[0] + postfix.join(""));
-
-              parts.push(num);
-
-              break;
+            for (const m of nextRowDigits) {
+              if (in_range(indices[0], indices[1] + 1, ...m.range))
+                parts.push(m.digit);
+              //   if (m.range[1] >= indices[0] || m.range[0] <= indices[1] + 1) {
+              //     parts.push(m.digit);
+              //   }
             }
+
+            break;
           }
           case "w": {
-            // check right after
-            if (index === row.length - 1) {
+            // check right before
+            if (index === 0) {
               break;
             }
-            let i = indices[1];
+            const d = digits.find((d) => d.range[1] === indices[0]);
 
-            let nums: string[] = [];
-
-            while (digit_regex.test(row[i]) && i < rowLength) {
-              nums.push(row[i]);
-              i++;
+            if (d) {
+              parts.push(d.digit);
             }
-
-            if (!nums.length) break;
-
-            const num = Number(nums.join(""));
-
-            parts.push(num);
           }
         }
         directionIndex++;
       }
 
+      console.log({ parts });
+      if (rowIndex === 1) {
+        // console.log({ parts, pos: matchArr.index });
+      }
+      // console.log({
+      //   parts,
+      //   rows: [rows[rowIndex - 1], row, rows[rowIndex + 1]],
+      // });
+
       if (parts.length === 2) {
         // console.log({ parts });
-        // console.log(`${matchArr[0]} in row ${rowIndex} is a part`);
+        // console.log(
+        //   `${matchArr[0]} at index ${matchArr.index} in row ${rowIndex} is a part`
+        // );
         const power = parts[0] * parts[1];
         return acc + power;
       }
@@ -305,7 +244,11 @@ async function part_2(path: string) {
   }, 0);
 
   console.log(total);
+  return total;
 }
 
 // await part_1("./input.txt");
+// await part_2("./sample.txt");
 await part_2("./input.txt");
+
+[""];
