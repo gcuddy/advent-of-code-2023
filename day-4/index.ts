@@ -71,6 +71,18 @@ export function getCardCopies(cardNum: number, winCount: number): number[] {
   return copies;
 }
 
+/**
+ * function to take a game and produce array of card nums
+ */
+export function getWinCopies(game: string): { card: number; copies: number[] } {
+    const { numbers, winning_numbers, card } = getCardData(game);
+    const wins = getWinningNumbers(winning_numbers, numbers);
+    const winCount = wins.length;
+    const copies = getCardCopies(card, winCount);
+
+    return { card, copies };
+  }
+
 export function part1(input: string): number {
   const rows = input.split("\n");
 
@@ -115,17 +127,7 @@ export function part2(input: string): number {
   return total;
 }
 
-/**
- * main function to take a game and produce array of card nums
- */
-export function getWinCopies(game: string): { card: number; copies: number[] } {
-  const { numbers, winning_numbers, card } = getCardData(game);
-  const wins = getWinningNumbers(winning_numbers, numbers);
-  const winCount = wins.length;
-  const copies = getCardCopies(card, winCount);
 
-  return { card, copies };
-}
 
 // handle input
 async function input() {
