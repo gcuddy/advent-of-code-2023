@@ -1,6 +1,8 @@
 import { expect, test } from "bun:test";
 import {
+  getCardCopies,
   getCardData,
+  getWinCopies,
   getWinningNumbers,
   part1,
   part2,
@@ -34,6 +36,17 @@ test("part 2", () => {
   expect(part2(example)).toBe(30);
 });
 
+test("part 2 with actual input", async () => {
+  const f = Bun.file("./input.txt");
+  const str = await f.text();
+
+  const t1 = performance.now();
+  part2(str);
+  const t2 = performance.now();
+
+  console.log(`Part 2 took ${t2 - t1} ms`);
+});
+
 test("get winning numbers", () => {
   expect(
     getWinningNumbers(
@@ -45,4 +58,15 @@ test("get winning numbers", () => {
 
 test("total winning numbers", () => {
   expect(totalWinningNumbers(4)).toBe(8);
+});
+
+test("total card copies", () => {
+  expect(getCardCopies(1, 4)).toEqual([2, 3, 4, 5]);
+});
+
+test("produce proper card copies", () => {
+  expect(getWinCopies(example.split("\n")[0])).toEqual({
+    card: 1,
+    copies: [2, 3, 4, 5],
+  });
 });
