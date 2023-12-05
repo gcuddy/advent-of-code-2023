@@ -26,6 +26,27 @@ export function part1(input: string): number {
   return Math.min(...locations);
 }
 
+export function part2(input: string): number {
+  const locations: number[] = [];
+  const lines = input.split("\n");
+  const seeds = parse_seed_range(lines[0]);
+  console.log({ seeds });
+  const maps = lines.slice(2).join("\n").split(map_regex).slice(1);
+  //   TODO: there's probably a way to cache/be smarter about seeds so we don't reprocess everything
+  for (const seed of seeds) {
+    let curr = seed;
+    // is there a way to avoid this n^2?
+    for (const map of maps) {
+      const m = parse_map(map.split("\n"));
+      // now this should be a "find smallest" type thing
+      curr = lookup_line(m, curr);
+    }
+    locations.push(curr);
+  }
+
+  return Math.min(...locations);
+}
+
 // move to utils
 export function range(start: number, end: number) {
   const output: number[] = [];
@@ -33,6 +54,27 @@ export function range(start: number, end: number) {
     output.push(i);
   }
   return output;
+}
+
+function chunk<T>(a: T[], c: number) {
+  if (c < 1) return [];
+  const r = [];
+  let i = 0;
+  let l = a.length;
+  while (i < l) {
+    r.push(a.slice(i, (i += c)));
+  }
+  return r;
+}
+
+// lol: this works great in the example, but the actual input won't work because they're million of items
+export function parse_seed_range(line: string) {
+  const nums = parse_numbers(line);
+  const chunks = chunk(nums, 2);
+  console.log({ chunks });
+  const seeds = chunks.flatMap((c) => range(c[0], c[0] + c[1]));
+  console.log({ seeds });
+  return seeds;
 }
 
 export function parse_numbers(line: string): number[] {
@@ -53,37 +95,21 @@ const lookup_line = (lines: MapLine[], n: number) => {
   return n;
 };
 
+// find smallest
+
 export function parse_map(lines: string[]): Array<MapLine> {
-  // source -> dest
-  // dest, source, range
-  //   console.log("parsing map", lines);
   return lines
     .map((line) => {
       // protect against empty lines
       if (!line.trim()) return;
       const [dest, source, range] = parse_numbers(line);
-      // console.log({ d, s, r });
       return {
         dest,
         source,
         range,
       };
-      // for (let i = 0; i < r; i++) {
-      //   map.set(s + i, d + i);
-      // }
     })
     .filter(Boolean) as Array<MapLine>;
-  // const map = new Map<number, number>();
-  //   lines.forEach((line) => {
-  //     // protect against empty lines
-  //     if (!line.trim()) return;
-  //     const [d, s, r] = parse_numbers(line);
-  //     console.log({ d, s, r });
-  //     for (let i = 0; i < r; i++) {
-  //       map.set(s + i, d + i);
-  //     }
-  //   });
-  return map;
 }
 
 async function input() {
@@ -92,10 +118,8 @@ async function input() {
   const f = Bun.file(path);
 
   const input = await f.text();
-
-  //   console.log({ input });
   console.log("part 1: ", part1(input));
-  //   console.log("part 2:", part2(input));
+  console.log("part 2: ", part2(input));
 }
 
 input();
