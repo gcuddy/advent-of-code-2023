@@ -44,10 +44,15 @@ export function part2(input: string): number {
 
   const [test_seed] = seeds;
 
-  let initial = [test_seed];
-  for (const r of ranges) {
-    initial = process_range(initial, r);
+  const lows: number[] = [];
+  for (const sr of seeds) {
+    let initial = [sr];
+    for (const r of ranges) {
+      initial = process_range(initial, r);
+    }
+    lows.push(get_lowest_from_sranges(initial));
   }
+  return Math.min(...lows);
   //   console.log({ seeds, ranges });
 
   //   TODO: there's probably a way to cache/be smarter about seeds so we don't reprocess everything
@@ -62,9 +67,9 @@ export function part2(input: string): number {
   //     locations.push(curr);
   //   }
 
-  console.log({ initial });
+  //   console.log({ initial });
 
-  return get_lowest_from_sranges(initial);
+  //   return get_lowest_from_sranges(initial);
 }
 
 // move to utils - also, this seems useful but won't actually be useful for the real inputs (which have millions of numbers - this will slow to a stop)
@@ -133,9 +138,11 @@ export function process_range(
     for (const range of ranges) {
       if (er[0] >= range.start && range.end >= er[0] && range.end < er[1]) {
         // then we have a split...
-        // console.log("SPLIT!!!", er, range);
+        console.log("SPLIT!!!", er, range);
         const n = [er[0] + range.offset, range.end + range.offset] as SRange;
         er[0] = range.end + 1;
+
+        existing_ranges.push([range.end + 1, er[1]] as SRange);
         new_ranges.push(n);
         has_match = true;
         //   console.log(`now: `, er, range)
@@ -167,7 +174,7 @@ export function process_range(
   //     }
   //   }
 
-  //   console.log({ new_ranges });
+  console.log({ new_ranges });
   return new_ranges;
 }
 

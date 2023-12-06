@@ -52,6 +52,26 @@ test("range processing: seed-to-soil", () => {
   ).toEqual([[81, 94]]);
 });
 
+test("range processing: seed-to-soil (2)", () => {
+  expect(
+    process_range(
+      [[55, 67]],
+      [
+        {
+          start: 50,
+          end: 97,
+          offset: 2,
+        },
+        {
+          start: 98,
+          end: 99,
+          offset: -48,
+        },
+      ]
+    )
+  ).toEqual([[57, 69]]);
+});
+
 test("range processing: soil to fertilizer", () => {
   expect(
     process_range(
@@ -75,6 +95,64 @@ test("range processing: soil to fertilizer", () => {
       ]
     )
   ).toEqual([[81, 94]]);
+});
+test("range processing: soil to fertilizer (2)", () => {
+  expect(
+    process_range(
+      [[57, 69]],
+      [
+        {
+          start: 15,
+          end: 51,
+          offset: -15,
+        },
+        {
+          start: 52,
+          end: 53,
+          offset: -15,
+        },
+        {
+          start: 0,
+          end: 14,
+          offset: 39,
+        },
+      ]
+    )
+  ).toEqual([[57, 69]]);
+});
+
+test("range processing: fertilizer-to-water (2)", () => {
+  expect(
+    process_range(
+      [[57, 69]],
+      [
+        {
+          start: 53,
+          end: 60,
+          offset: -4,
+        },
+        {
+          start: 11,
+          end: 52,
+          offset: -11,
+        },
+        {
+          start: 0,
+          end: 6,
+          offset: 42,
+        },
+        {
+          start: 7,
+          end: 10,
+          offset: 50,
+        },
+      ]
+    )
+  ).toEqual([
+    // 57, 60
+    [53, 56],
+    [61, 69],
+  ]);
 });
 
 test("range processing: fertilizer-to-water", () => {
