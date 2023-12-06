@@ -85,7 +85,7 @@ function chunk<T>(a: T[], c: number) {
   if (c < 1) return [];
   const r = [];
   let i = 0;
-  let l = a.length;
+  const l = a.length;
   while (i < l) {
     r.push(a.slice(i, (i += c)));
   }
@@ -133,7 +133,7 @@ export function process_range(
   ranges: Range[]
 ): SeedRanges {
   const new_ranges: SeedRanges = [];
-  for (let er of existing_ranges) {
+  for (const er of existing_ranges) {
     let has_match = false;
     for (const range of ranges) {
       if (er[0] >= range.start && range.end >= er[0] && range.end < er[1]) {
@@ -189,7 +189,7 @@ export function find_smallest_output(
   // given 79 - 92, we should check if the destination is higher or lower than the source (offset).
   // if higher, then we want to avoid it. if lower, we want to seek it out.
   //
-  let curr_smallest: [number, number] = [-1, -1];
+  const curr_smallest: [number, number] = [-1, -1];
   for (const line of lines) {
     const { dest, range, source } = line;
     const offset = dest - source;
