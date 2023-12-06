@@ -26,26 +26,45 @@ export function part1(input: string): number {
   return Math.min(...locations);
 }
 
+function run_seed_thru_map() {}
+
 // need some way of calculating a -> f
+
+export function get_lowest_from_sranges(sranges: SRange[]) {
+  return Math.min(...sranges.map((s) => s[0]));
+}
 
 export function part2(input: string): number {
   const locations: number[] = [];
   const lines = input.split("\n");
   const seeds = parse_seed_range(lines[0]);
   const maps = lines.slice(2).join("\n").split(map_regex).slice(1);
-  //   TODO: there's probably a way to cache/be smarter about seeds so we don't reprocess everything
-  for (const seed of seeds) {
-    let curr = seed;
-    // is there a way to avoid this n^2?
-    for (const map of maps) {
-      const m = parse_map(map.split("\n"));
-      // now this should be a "find smallest" type thing
-      curr = lookup_line(m, curr);
-    }
-    locations.push(curr);
-  }
 
-  return Math.min(...locations);
+  const ranges = maps.map((m) => map_to_range(m.split("\n")));
+
+  const [test_seed] = seeds;
+
+  let initial = [test_seed];
+  for (const r of ranges) {
+    initial = process_range(initial, r);
+  }
+  //   console.log({ seeds, ranges });
+
+  //   TODO: there's probably a way to cache/be smarter about seeds so we don't reprocess everything
+  //   for (const seed of seeds) {
+  //     let curr = seed;
+  //     // is there a way to avoid this n^2?
+  //     for (const map of maps) {
+  //       const m = parse_map(map.split("\n"));
+  //       // now this should be a "find smallest" type thing
+  //       curr = lookup_line(m, curr);
+  //     }
+  //     locations.push(curr);
+  //   }
+
+  console.log({ initial });
+
+  return get_lowest_from_sranges(initial);
 }
 
 // move to utils - also, this seems useful but won't actually be useful for the real inputs (which have millions of numbers - this will slow to a stop)
@@ -69,13 +88,10 @@ function chunk<T>(a: T[], c: number) {
 }
 
 // lol: this works great in the example, but the actual input won't work because they're million of items
-export function parse_seed_range(line: string) {
+export function parse_seed_range(line: string): SeedRanges {
   const nums = parse_numbers(line);
   const chunks = chunk(nums, 2);
-  console.log({ chunks });
-  const seeds = chunks.flatMap((c) => range(c[0], c[0] + c[1]));
-  console.log({ seeds });
-  return seeds;
+  return chunks.map((s) => [s[0], s[0] + s[1] - 1] satisfies SRange);
 }
 
 export function parse_numbers(line: string): number[] {
@@ -117,10 +133,10 @@ export function process_range(
     for (const range of ranges) {
       if (er[0] >= range.start && range.end >= er[0] && range.end < er[1]) {
         // then we have a split...
-        console.log("SPLIT!!!", er, range)
+        // console.log("SPLIT!!!", er, range);
         const n = [er[0] + range.offset, range.end + range.offset] as SRange;
         er[0] = range.end + 1;
-        new_ranges.push(n)
+        new_ranges.push(n);
         has_match = true;
         //   console.log(`now: `, er, range)
       } else if (er[0] >= range.start && er[1] <= range.end) {
@@ -128,7 +144,7 @@ export function process_range(
         new_ranges.push([er[0] + range.offset, er[1] + range.offset]);
         has_match = true;
       } else if (er[1] <= range.end && range.start <= er[1]) {
-        console.log("END SPLIT!!!", er, range)
+        // console.log("END SPLIT!!!", er, range);
         const n: SRange = [range.start + range.offset, er[1] + range.offset];
         // new_ranges.push([])
         er[1] = range.start - 1;
@@ -151,7 +167,7 @@ export function process_range(
   //     }
   //   }
 
-  console.log({new_ranges})
+  //   console.log({ new_ranges });
   return new_ranges;
 }
 
@@ -198,6 +214,21 @@ export function parse_map(lines: string[]): Array<MapLine> {
       };
     })
     .filter(Boolean) as Array<MapLine>;
+}
+
+export function map_to_range(lines: string[]): Array<Range> {
+  return lines
+    .map((line) => {
+      // protect against empty lines
+      if (!line.trim()) return;
+      const [dest, source, range] = parse_numbers(line);
+      return {
+        start: source,
+        end: source + range - 1,
+        offset: dest - source,
+      };
+    })
+    .filter(Boolean);
 }
 
 async function input() {
